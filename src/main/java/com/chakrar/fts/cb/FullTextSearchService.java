@@ -30,28 +30,17 @@ import com.couchbase.client.java.search.result.SearchQueryRow;
 @Service
 public class FullTextSearchService {
 
-	@Autowired
-	private CouchbaseTemplate template;
-
 	private static final Logger log = LoggerFactory.getLogger(FullTextSearchService.class);
 
 	private Bucket bucket;
 
-	/**
-	 * @return the bucket
-	 */
-	public Bucket getBucket() {
-		if (null != bucket) {
-			return bucket;
-		}
-		bucket = template.getCouchbaseBucket();
-		log.info("******** Bucket :: = " + bucket.name());
-		return bucket;
+	public FullTextSearchService(Bucket bucket) {
+		this.bucket = bucket;
 	}
 
 	public void findByTextMatch(String searchText) throws Exception {
 		log.info("findByTextMatch ");
-		SearchQueryResult result = getBucket().query(
+		SearchQueryResult result = bucket.query(
 				new SearchQuery(FtsConstants.FTS_IDX_CONF, SearchQuery.matchPhrase(searchText)).fields("summary"));
 		log.info("****** total  hits := " + result.hits().size());
 		for (SearchQueryRow hit : result.hits()) {
@@ -63,7 +52,7 @@ public class FullTextSearchService {
 	public void findByTextFuzzy(String searchText) throws Exception {
 		log.info(" findByTextFuzzy ");
 
-		SearchQueryResult resultFuzzy = getBucket()
+		SearchQueryResult resultFuzzy = bucket
 				.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, SearchQuery.match(searchText).fuzziness(3))
 						.fields("topics"));
 
@@ -79,7 +68,7 @@ public class FullTextSearchService {
 	public void findByRegExp(String regexp) throws Exception {
 		log.info(" findByRegExp ");
 		RegexpQuery rq = new RegexpQuery(regexp).field("topics");
-		SearchQueryResult resultRegExp = getBucket().query(new SearchQuery(FtsConstants.FTS_IDX_CONF, rq));
+		SearchQueryResult resultRegExp = bucket.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, rq));
 		log.info("****** total  hits := " + resultRegExp.hits().size());
 		for (SearchQueryRow hit : resultRegExp.hits()) {
 
@@ -92,7 +81,7 @@ public class FullTextSearchService {
 	public void findByPrefix(String prefix) throws Exception {
 		log.info(" findByPrefix ");
 		PrefixQuery pq = new PrefixQuery(prefix).field("summary");
-		SearchQueryResult resultPrefix = getBucket()
+		SearchQueryResult resultPrefix = bucket
 				.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, pq).fields("summary"));
 		log.info("****** total  hits := " + resultPrefix.hits().size());
 		for (SearchQueryRow hit : resultPrefix.hits()) {
@@ -104,7 +93,7 @@ public class FullTextSearchService {
 	public void findByMatchPhrase(String matchPhrase) throws Exception {
 		log.info(" findByMatchPhrase ");
 		MatchPhraseQuery mpq = new MatchPhraseQuery(matchPhrase).field("speakers.talk");
-		SearchQueryResult resultPrefix = getBucket()
+		SearchQueryResult resultPrefix = bucket
 				.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, mpq).fields("speakers.talk"));
 		log.info("****** total  hits := " + resultPrefix.hits().size());
 		for (SearchQueryRow hit : resultPrefix.hits()) {
@@ -116,7 +105,7 @@ public class FullTextSearchService {
 	public void findByNumberRange(Integer min, Integer max) throws Exception {
 		log.info(" findByNumberRange ");
 		NumericRangeQuery nrq = new NumericRangeQuery().min(min).max(max).field("attendees");
-		SearchQueryResult resultPrefix = getBucket()
+		SearchQueryResult resultPrefix = bucket
 				.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, nrq).fields("title", "attendees", "location"));
 		log.info("****** total  hits := " + resultPrefix.hits().size());
 		for (SearchQueryRow hit : resultPrefix.hits()) {
@@ -133,7 +122,7 @@ public class FullTextSearchService {
 
 		MatchQuery mq2 = new MatchQuery(text2).field("topics");
 
-		SearchQueryResult match1Result = getBucket().query(
+		SearchQueryResult match1Result = bucket.query(
 				new SearchQuery(FtsConstants.FTS_IDX_CONF, mq1).fields("title", "attendees", "location", "topics"));
 
 		log.info("****** total  hits for match1 := " + match1Result.hits().size());
@@ -143,7 +132,7 @@ public class FullTextSearchService {
 					+ " attendees := " + row.content().get("attendees") + " topics := " + row.content().get("topics"));
 		}
 
-		SearchQueryResult match2Result = getBucket().query(
+		SearchQueryResult match2Result = bucket.query(
 				new SearchQuery(FtsConstants.FTS_IDX_CONF, mq2).fields("title", "attendees", "location", "topics"));
 		log.info("****** total  hits for match2 := " + match2Result.hits().size());
 		for (SearchQueryRow hit : match2Result.hits()) {
@@ -153,7 +142,7 @@ public class FullTextSearchService {
 		}
 
 		ConjunctionQuery conjunction = new ConjunctionQuery(mq1, mq2);
-		SearchQueryResult result = getBucket().query(new SearchQuery(FtsConstants.FTS_IDX_CONF, conjunction)
+		SearchQueryResult result = bucket.query(new SearchQuery(FtsConstants.FTS_IDX_CONF, conjunction)
 				.fields("title", "attendees", "location", "topics"));
 		log.info("****** total  hits for conjunction query := " + result.hits().size());
 		for (SearchQueryRow hit : result.hits()) {
@@ -164,7 +153,7 @@ public class FullTextSearchService {
 		}
 
 		DisjunctionQuery dis = new DisjunctionQuery(mq1, mq2);
-		SearchQueryResult resultDis = getBucket().query(
+		SearchQueryResult resultDis = bucket.query(
 				new SearchQuery(FtsConstants.FTS_IDX_CONF, dis).fields("title", "attendees", "location", "topics"));
 		log.info("****** total  hits for disjunction query := " + resultDis.hits().size());
 		for (SearchQueryRow hit : resultDis.hits()) {
@@ -175,7 +164,7 @@ public class FullTextSearchService {
 		}
 
 		BooleanQuery bool = new BooleanQuery().must(mq1).mustNot(mq2);
-		SearchQueryResult resultBool = getBucket().query(
+		SearchQueryResult resultBool = bucket.query(
 				new SearchQuery(FtsConstants.FTS_IDX_CONF, bool).fields("title", "attendees", "location", "topics"));
 		log.info("****** total  hits for booelan query := " + resultBool.hits().size());
 		for (SearchQueryRow hit : resultBool.hits()) {
